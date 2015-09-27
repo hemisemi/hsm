@@ -1,0 +1,6 @@
+.build
+.deps
+*.user
+*.so
+*.o
+*~
