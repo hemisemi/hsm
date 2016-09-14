@@ -3,7 +3,16 @@
 #include <string>
 #include <list>
 
+#include <cstdio>
+
 namespace hsm{
+
+inline const char *to_string(int val){
+    char *str = new char[64];
+    std::sprintf(str, "%d", val);
+
+    return str;
+}
 
 inline double abs(double d){
     if(d < 0.0)
@@ -26,9 +35,11 @@ inline T join(const std::list<T> & list){
 
 inline std::string join(const std::list<std::string> &list, const std::string & sep){
     std::string str;
+    bool first = true;
     for(const std::string & t : list){
-        if(!str.empty())
+        if(!first)
             str += sep;
+        first = false;
         str += t;
     }
     return str;
@@ -36,9 +47,11 @@ inline std::string join(const std::list<std::string> &list, const std::string & 
 
 inline std::string join(const std::list<std::string> &list, char sep){
     std::string str;
+    bool first = true;
     for(const std::string & t : list){
-        if(!str.empty())
+        if(!first)
             str += sep;
+        first = false;
         str += t;
     }
     return str;

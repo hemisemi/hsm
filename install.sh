@@ -10,4 +10,5 @@ done
 
 for file in $HEADERS; do
 	cp $file ${file/$SRCDIR/$DESTINATION}
+	chmod o+r ${file/$SRCDIR/$DESTINATION}
 done

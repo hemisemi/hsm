@@ -1,71 +1,66 @@
-#ifndef SWAPI_URI_H
-#define SWAPI_URI_H
+#pragma once
 
 #include <string>
 #include <list>
+#include <ostream>
 
 namespace hsm{
 
 class uri{
 public:
-    enum ReadMode{
-        PathOnly = 0,
-        Query = 2,
-        Fragment = 1,
-        Sheme = 8,
-        Authority = 4,
-        Normal = 15
-    };
-
-    uri(ReadMode = Normal);
+    uri();
+    uri(const char* str);
+    uri(const char* str, size_t len);
     uri(const std::string & uri);
-    uri(const std::string & uri, ReadMode rm);
     uri(const uri & uri);
 
-    void setUri(std::string uri);
+    bool set(std::string uri);
     void clear();
 
     const std::string & sheme() const;
     const std::string & authority() const;
     const std::list<std::string> & path() const;
+    std::string path_string() const;
     const std::list<std::string> &  query() const;
+    std::string query_string() const;
     const std::string & fragment() const;
 
     std::string inspect() const;
 
-    bool isAbsolute() const;
-    void makeAbsolute(const uri & position);
+    bool empty() const;
+    bool is_absolute() const;
+    void make_absolute(const uri & position);
     uri absolute(const uri & position) const;
 
-    void setSheme(const std::string & sheme);
-    void setAuthority(const std::string & authority);
-    void setPath(const std::string & path);
-    void setPath(const std::list<std::string> & path);
-    void setQuery(const std::string & query);
-    void setFragment(const std::string & fragment);
+    void set_sheme(const std::string & sheme);
+    void set_authority(const std::string & authority);
+    void set_path(const std::string & path);
+    void set_path(const std::list<std::string> & path);
+    void set_query(const std::string & query);
+    void set_fragment(const std::string & fragment);
 
+    uri & operator=(const uri & uri);
     bool operator ==(const std::string & str) const;
     bool operator ==(const uri & uri) const;
     bool operator !=(const std::string & str) const;
     bool operator !=(const uri & uri) const;
     uri operator+(const uri & uri) const;
 
-    std::string toString() const;
+    std::string to_string() const;
 
-    bool cdUp();
+    bool cd_up();
     bool cd(const std::string & name);
-    bool isRoot() const;
+    bool is_root() const;
 private:
+    bool _valid;
+
     std::string _sheme;
     std::string _authority;
     std::list<std::string> _path;
     std::list<std::string> _query;
     std::string _fragment;
-
-    bool _absolute_path;
-    ReadMode _rm;
 };
 
-}
+std::ostream & operator<<(std::ostream & out, const hsm::uri & uri);
 
-#endif // SWAPI_URI_H
+}

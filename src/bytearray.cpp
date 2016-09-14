@@ -5,7 +5,7 @@
 
 namespace hsm{
 
-bytearray swUncompress(const uint8* data, int nbytes){
+bytearray swUncompress(const uint8_t* data, int nbytes){
     if(!data){
         std::cerr << "swUncompress: Data is null" << std::endl;
         return bytearray();
@@ -18,8 +18,8 @@ bytearray swUncompress(const uint8* data, int nbytes){
     ulong expectedSize = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | (data[3]);
     ulong len = std::max<ulong>(expectedSize, 1ul);
     ulong alloc = len;
-    uint8 *dst = new uint8[alloc];
-    int res = ::uncompress(dst, &len, (uchar*)data+4, nbytes-4);
+    uint8_t *dst = new uint8_t[alloc];
+    int res = ::uncompress(dst, &len, (uint8_t*)data+4, nbytes-4);
     switch (res){
     case Z_OK:
         if(len != alloc)
@@ -39,10 +39,10 @@ bytearray swUncompress(const uint8* data, int nbytes){
 }
 
 bytearray swUncompress(const bytearray & ary){
-    return swUncompress((const uint8*)ary.data(), ary.size());
+    return swUncompress((const uint8_t*)ary.data(), ary.size());
 }
 
-bytearray swCompress(const uint8* data, int nbytes, int compressionLevel){
+bytearray swCompress(const uint8_t* data, int nbytes, int compressionLevel){
     if(nbytes == 0)
         return bytearray(4, '\0');
     if(!data){
@@ -56,7 +56,7 @@ bytearray swCompress(const uint8* data, int nbytes, int compressionLevel){
     int res;
     do{
         bazip.resize(len + 4);
-        res = ::compress2((uchar*)bazip.data()+4, &len, (uchar*)data, nbytes, compressionLevel);
+        res = ::compress2((uint8_t*)bazip.data()+4, &len, (uint8_t*)data, nbytes, compressionLevel);
         switch(res){
         case Z_OK:
             bazip.resize(len + 4);
@@ -79,12 +79,12 @@ bytearray swCompress(const uint8* data, int nbytes, int compressionLevel){
 }
 
 bytearray swCompress(const bytearray & ary, int compressionLevel){
-    return swCompress((const uint8*)ary.data(), ary.size(), compressionLevel);
+    return swCompress((const uint8_t*)ary.data(), ary.size(), compressionLevel);
 }
 
 }
 
-hsm::datastream & operator << (hsm::datastream & stream, const hsm::bytearray & data){
+/*hsm::datastream & operator << (hsm::datastream & stream, const hsm::bytearray & data){
     stream.writeBytes(data.data(), data.size());
     return stream;
 }
@@ -96,4 +96,4 @@ hsm::datastream & operator >> (hsm::datastream & stream, hsm::bytearray & data){
     data = hsm::bytearray(d, len);
     delete[] d;
     return stream;
-}
+}*/

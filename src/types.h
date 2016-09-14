@@ -23,20 +23,7 @@
 
 namespace hsm{
 
-typedef int8_t int8;    /* 8 bit signed */
-typedef uint8_t uint8;  /* 8 bit unsigned */
-typedef int16_t int16;  /* 16 bit signed */
-typedef uint16_t uint16;/* 16 bit unsigned */
-typedef int32_t int32;  /* 32 bit signed */
-typedef uint32_t uint32;/* 32 bit unsigned */
-typedef int64_t int64;  /* 64 bit signed */
-typedef uint64_t uint64;/* 64 bit unsigned */
-
-typedef unsigned char uchar;
-typedef unsigned int uint;
-typedef unsigned long ulong;
-
-typedef uint8 byte;
+typedef uint8_t byte;
 typedef double real;
 
 }

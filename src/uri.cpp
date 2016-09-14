@@ -3,29 +3,28 @@
 
 namespace hsm{
 
-uri::uri(ReadMode rm){
-    _rm = rm;
-    _absolute_path = false;
+uri::uri(){
+    //
+}
+
+uri::uri(const char *str){
+    set(std::string(str));
+}
+
+uri::uri(const char *str, size_t len){
+    set(std::string(str, len));
 }
 
 uri::uri(const std::string & uri){
-    _rm = Normal;
-    setUri(uri);
-}
-
-uri::uri(const std::string & uri, ReadMode rm){
-    _rm = rm;
-    setUri(uri);
+    set(uri);
 }
 
 uri::uri(const hsm::uri &uri){
-    _rm = uri._rm;
     _sheme = uri._sheme;
     _authority = uri._authority;
     _path = uri._path;
     _query = uri._query;
     _fragment = uri._fragment;
-    _absolute_path = uri._absolute_path;
 }
 
 const std::string & uri::sheme() const{
@@ -40,8 +39,16 @@ const std::list<std::string> & uri::path() const{
     return _path;
 }
 
+std::string uri::path_string() const{
+    return join(path(), '/');
+}
+
 const std::list<std::string> & uri::query() const{
     return _query;
+}
+
+std::string uri::query_string() const{
+    return join(query(), '&');
 }
 
 const std::string & uri::fragment() const{
@@ -49,23 +56,27 @@ const std::string & uri::fragment() const{
 }
 
 std::string uri::inspect() const{
-    return "("+sheme()+")("+authority()+")("+join(path(), '/')+")("+join(query(), '&')+")("+fragment()+")";
+    return "("+sheme()+")("+authority()+")("+path_string()+")("+query_string()+")("+fragment()+")";
 }
 
-bool uri::isAbsolute() const{
-    return _absolute_path;
+bool uri::empty() const{
+    return _sheme.empty() && _authority.empty() && _path.empty() && _query.empty() && _fragment.empty();
 }
 
-void uri::makeAbsolute(const uri &position){
-    if(!isAbsolute())
-        setPath(position.path()+_path);
+bool uri::is_absolute() const{
+    return (_path.empty() || _path.front().empty());
+}
+
+void uri::make_absolute(const uri &position){
+    if(!is_absolute())
+        set_path(position.path()+_path);
 }
 
 uri uri::absolute(const uri &position) const{
-    if(isAbsolute())
+    if(is_absolute())
         return *this;
     uri copy(*this);
-    copy.makeAbsolute(position);
+    copy.make_absolute(position);
     return copy;
 }
 
@@ -75,134 +86,213 @@ void uri::clear(){
     _path.clear();
     _query.clear();
     _fragment.clear();
-    _absolute_path = false;
 }
 
-void uri::setSheme(const std::string &sheme){
+void uri::set_sheme(const std::string &sheme){
     _sheme = sheme;
 }
 
-void uri::setAuthority(const std::string &authority){
+void uri::set_authority(const std::string &authority){
     _authority = authority;
 }
 
-void uri::setPath(const std::list<std::string> &path){
+void uri::set_path(const std::list<std::string> &path){
     _path = path;
-    _absolute_path = (!_path.empty() && _path.front().empty());
 }
 
-void uri::setPath(const std::string &path){
+void uri::set_path(const std::string &path){
     _path = split(path, '/');
-    _absolute_path = (!_path.empty() && _path.front().empty());
 }
 
-void uri::setQuery(const std::string &query){
+void uri::set_query(const std::string &query){
     if(!query.empty())
         _query = split(query, '&');
     else
         _query.clear();
 }
 
-void uri::setFragment(const std::string &fragment){
+void uri::set_fragment(const std::string &fragment){
     if(!fragment.empty())
         _fragment = fragment;
     else
         _fragment.clear();
 }
 
-std::string uri::toString() const{
+std::string uri::to_string() const{
     std::string str = "";
     if(!_sheme.empty())
         str += _sheme+':';
     if(!_authority.empty())
         str = str+"//"+_authority+"/";
     if(!_path.empty())
-        str += join(_path, '/');
+        str += path_string();
     if(!_query.empty())
-        str = str+'?'+join(_query, '&');
+        str = str+'?'+query_string();
     if(!_fragment.empty())
         str = str+"#"+_fragment;
     return str;
 }
 
-static std::string findSheme(std::string & uri){
-    std::string sheme = "";
-    int index = 0;
-    if((index = indexOf(uri, ':')) >= 0){
-        std::string tmp = section(uri, 0, index);
-        bool ok = true;
-        std::string::iterator it = tmp.begin();
-        while(ok && it != tmp.end()){
-            char c = *it;
-            if(it == tmp.begin()){
-                ok = isalpha(c);
-            }else{
-                ok = (isalpha(c) || isdigit(c) || c == '+' || c == '-' || c == '.');
+bool uri::set(std::string uri){
+    _valid = true;
+
+    enum state_id{
+        sheme,
+        authority,
+        path,
+        query,
+        fragment
+    }state = sheme;
+
+    std::string tmp;
+    _sheme.clear();
+    _authority.clear();
+    _path.clear();
+    _query.clear();
+    _fragment.clear();
+
+    for(size_t i = 0; i < uri.size(); ++i){
+        char c = uri[i];
+        switch(state){
+        case sheme:
+            switch(c){
+            case ':':
+                set_sheme(tmp);
+                tmp.clear();
+                if(i+2 < uri.size() && uri[i+1] == '/' && uri[i+2] == '/'){
+                    i += 2;
+                    state = authority;
+                }else{
+                    state = path;
+                }
+                break;
+            case '/':
+                if(i+1 < uri.size() && uri[i+1] == '/'){
+                    if(tmp.empty()){
+                        ++i;
+                        state = authority;
+                    }else{
+                        _path.push_back(tmp);
+                        state = path;
+                    }
+                }else{
+                    _path.push_back(tmp);
+                    state = path;
+                }
+                tmp.clear();
+                break;
+            case '?':
+                _path.push_back(tmp);
+                tmp.clear();
+                state = query;
+            case '#':
+                _path.push_back(tmp);
+                tmp.clear();
+                state = fragment;
+            default:
+                tmp.push_back(c);
             }
-            ++it;
-        }
-        if(ok){
-            sheme = tmp;
-            uri.erase(0, tmp.size()+1);
-            tmp.clear();
-        }
-    }
-    return sheme;
-}
-
-static std::string findAuthority(std::string & uri){
-    std::string authority = "";
-    if(indexOf(uri, "//") == 0){
-        uri.erase(0, 2);
-        std::string::iterator it = uri.begin();
-        while(it != uri.end() && *it != '/' && *it != '#' && *it != '?'){
-            authority += *it;
-            ++it;
-        }
-        uri.erase(0, authority.size()+1);
-    }
-    return authority;
-}
-
-static std::string findFragment(std::string & uri, char _c_){
-    std::string fragment;
-    if(!uri.empty()){
-        std::string::iterator it = uri.end();
-        int index = uri.size();
-        do{
-            --it;
-            char c = *it;
-            if(c == _c_){
-                fragment = section(uri, index, uri.size()-index);
-                --index;
-                uri.erase(index, uri.size()-index);
+            break;
+        case authority:
+            if(c == '/'){
+                set_authority(tmp);
+                tmp.clear();
+                _path.push_back(tmp);
+                state = path;
+            }else{
+                tmp.push_back(c);
+            }
+            break;
+        case path:
+            switch(c){
+            case '/':
+                if(!tmp.empty())
+                    _path.push_back(tmp);
+                tmp.clear();
+                break;
+            case '?':
+                if(!tmp.empty())
+                    _path.push_back(tmp);
+                tmp.clear();
+                state = query;
+                break;
+            case '#':
+                if(!tmp.empty())
+                    _path.push_back(tmp);
+                tmp.clear();
+                state = fragment;
+                break;
+            default:
+                tmp.push_back(c);
                 break;
             }
-            --index;
-        }while(it != uri.begin());
+            break;
+        case query:
+            switch(c){
+            case '&':
+                if(!tmp.empty())
+                    _query.push_back(tmp);
+                tmp.clear();
+                break;
+            case '#':
+                if(!tmp.empty())
+                    _query.push_back(tmp);
+                tmp.clear();
+                state = fragment;
+                break;
+            default:
+                tmp.push_back(c);
+                break;
+            }
+            break;
+        case fragment:
+            tmp.push_back(c);
+            break;
+        }
     }
-    return fragment;
+
+    if(!tmp.empty()){
+        switch(state){
+        case sheme:
+            _path.push_back(tmp);
+            break;
+        case authority:
+            goto malformed_uri;
+        case path:
+            _path.push_back(tmp);
+            break;
+        case query:
+            _query.push_back(tmp);
+            break;
+        case fragment:
+            _fragment = tmp;
+            break;
+        }
+    }
+
+    return true;
+
+malformed_uri:
+    _valid = false;
+    return false;
 }
 
-void uri::setUri(std::string uri){
-    if(_rm & Sheme)
-        setSheme(findSheme(uri));
-    if(_rm & Authority)
-        setAuthority(findAuthority(uri));
-    if(_rm & Fragment)
-        setFragment(findFragment(uri, '#'));
-    if(_rm & Query)
-        setQuery(findFragment(uri, '?'));
-    setPath(uri);
+uri & uri::operator=(const hsm::uri & uri){
+    _sheme = uri._sheme;
+    _authority = uri._authority;
+    _path = uri._path;
+    _query = uri._query;
+    _fragment = uri._fragment;
+
+    return *this;
 }
 
 bool uri::operator ==(const std::string & str) const{
-    return toString() == str;
+    return to_string() == str;
 }
 
 bool uri::operator ==(const hsm::uri & uri) const{
-    return (_absolute_path == uri._absolute_path
-            && _authority == uri._authority
+    return (_authority == uri._authority
             && _fragment == uri._fragment
             && _path == uri._path
             && _query == uri._query
@@ -223,7 +313,7 @@ uri uri::operator +(const hsm::uri & uri) const{
     return r;
 }
 
-bool uri::cdUp(){
+bool uri::cd_up(){
     if(_path.empty())
         return false;
     _path.pop_back();
@@ -234,14 +324,18 @@ bool uri::cd(const std::string &name){
     if(name == ".")
         return true;
     if(name == ".."){
-        return cdUp();
+        return cd_up();
     }
     _path.push_back(name);
     return true;
 }
 
-bool uri::isRoot() const{
+bool uri::is_root() const{
     return _path.empty();
+}
+
+std::ostream & operator<<(std::ostream & out, const hsm::uri & uri){
+    return out << uri.to_string();
 }
 
 }
