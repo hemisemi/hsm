@@ -5,8 +5,8 @@
 
 namespace hsm{
 
-template<class data_t>
-class ref : public library::reader<data_t>{
+template<typename data_t>
+class ref : public library<data_t>::reader{
 public:
     ref(){
         _entry = nullptr;
@@ -32,21 +32,49 @@ public:
         _ptr = nullptr;
 
         if(_entry != nullptr){
-            _entry->grab();
+			_entry->grab(this);
         }
     }
 
+	template<typename T>
+	ref(const ref<T> & r){
+		_ptr = r._ptr;
+		_uri = r._uri;
+		//_entry = r._entry;
+		_entry = nullptr;
+	}
+
     ~ref(){
         if(_entry != nullptr){
-            _entry->release();
+			_entry->release(this);
         }
     }
+
+	const data_t & operator*() const{
+		return *_ptr;
+	}
+
+	data_t & operator*(){
+		return *_ptr;
+	}
+
+	const data_t *operator->() const{
+		return _ptr;
+	}
+
+	data_t *operator->(){
+		return _ptr;
+	}
+
+	operator data_t*(){
+		return _ptr;
+	}
 
     bool set_uri(const hsm::uri & uri){
         if(_entry == nullptr){
             return false;
         }
-        if(_entry->set_uri(uri)){
+		if(_entry->lib().set_uri(_entry, uri)){
             _uri = uri;
             return true;
         }
@@ -90,13 +118,13 @@ public:
         }
     }
 
-    void resource_freed(library<data_t>::entry *){
+	void resource_freed(typename library<data_t>::entry *){
         _ptr = nullptr;
         _entry = nullptr;
         _uri->clear();
     }
 
-    void resource_uri_changed(library<data_t>::entry *, const hsm::uri & new_uri){
+	void resource_uri_changed(typename library<data_t>::entry *, const hsm::uri & new_uri){
         _uri = new_uri;
     }
 
@@ -104,7 +132,7 @@ private:
     hsm::uri *_uri;
     data_t *_ptr;
 
-    library::entry *_entry;
+	typename library<data_t>::entry *_entry;
 };
 
 }
