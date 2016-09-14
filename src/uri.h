@@ -45,8 +45,12 @@ public:
     bool operator !=(const std::string & str) const;
     bool operator !=(const uri & uri) const;
     uri operator+(const uri & uri) const;
+    bool operator<(const uri & uri) const;
+    bool operator<=(const uri & uri) const;
+    bool operator>(const uri & uri) const;
+    bool operator>=(const uri & uri) const;
 
-    std::string to_string() const;
+    const std::string & to_string() const;
 
     bool cd_up();
     bool cd(const std::string & name);
@@ -59,8 +63,23 @@ private:
     std::list<std::string> _path;
     std::list<std::string> _query;
     std::string _fragment;
+
+    void generate_string();
+
+    std::string _str;
 };
 
 std::ostream & operator<<(std::ostream & out, const hsm::uri & uri);
+
+}
+
+namespace std{
+
+template<>
+struct hash<hsm::uri>{
+    std::size_t operator()(const hsm::uri & key) const{
+        return hash<string>()(key.to_string());
+    }
+};
 
 }

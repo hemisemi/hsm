@@ -1,7 +1,7 @@
 #pragma once
 
-#include <map>
-#include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include "uri.h"
 
 namespace hsm{
@@ -28,8 +28,8 @@ public:
         }
 
         ~entry(){
-			for(reader *r : _readers)
-				r->resource_freed(this);
+            for(reader *r : _readers)
+                r->resource_freed(this);
         }
 
         void free(){
@@ -56,23 +56,15 @@ public:
             return _ref_count;
         }
 
-        hsm::uri & uri() const{
+        const hsm::uri & uri() const{
             return _uri;
         }
 
-		/*bool set_uri(const hsm::uri & uri){
-            if(_lib.change_uri(this, uri)){
-                _uri = uri;
-                return true;
-            }
-            return false;
-		}*/
-
-		void set_uri(const hsm::uri & uri){
-			for(reader *r : _readers)
-				r->resource_uri_changed(this, uri);
-			_uri = uri;
-		}
+        void set_uri(const hsm::uri & uri){
+            for(reader *r : _readers)
+                r->resource_uri_changed(this, uri);
+            _uri = uri;
+        }
 
         data_t *value() const{
             return _ptr;
@@ -82,9 +74,9 @@ public:
             return _lib;
         }
 
-		library<data_t> & lib(){
-			return _lib;
-		}
+        library<data_t> & lib(){
+            return _lib;
+        }
 
     private:
         library<data_t> & _lib;
@@ -92,7 +84,7 @@ public:
         data_t *_ptr;
         size_t _ref_count;
 
-        std::set<reader *> _readers;
+        std::unordered_set<reader *> _readers;
     };
 
 	bool set_uri(entry *e, const hsm::uri & new_uri){
@@ -165,7 +157,7 @@ public:
     }
 
 private:
-    std::map<hsm::uri, entry*> _map;
+    std::unordered_map<hsm::uri, entry*> _map;
 };
 
 }

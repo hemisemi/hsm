@@ -25,6 +25,8 @@ uri::uri(const hsm::uri &uri){
     _path = uri._path;
     _query = uri._query;
     _fragment = uri._fragment;
+    _str = uri._str;
+    _valid = uri._valid;
 }
 
 const std::string & uri::sheme() const{
@@ -86,22 +88,28 @@ void uri::clear(){
     _path.clear();
     _query.clear();
     _fragment.clear();
+
+    _str.clear();
 }
 
 void uri::set_sheme(const std::string &sheme){
     _sheme = sheme;
+    generate_string();
 }
 
 void uri::set_authority(const std::string &authority){
     _authority = authority;
+    generate_string();
 }
 
 void uri::set_path(const std::list<std::string> &path){
     _path = path;
+    generate_string();
 }
 
 void uri::set_path(const std::string &path){
     _path = split(path, '/');
+    generate_string();
 }
 
 void uri::set_query(const std::string &query){
@@ -109,6 +117,7 @@ void uri::set_query(const std::string &query){
         _query = split(query, '&');
     else
         _query.clear();
+    generate_string();
 }
 
 void uri::set_fragment(const std::string &fragment){
@@ -116,21 +125,35 @@ void uri::set_fragment(const std::string &fragment){
         _fragment = fragment;
     else
         _fragment.clear();
+    generate_string();
 }
 
-std::string uri::to_string() const{
-    std::string str = "";
-    if(!_sheme.empty())
-        str += _sheme+':';
-    if(!_authority.empty())
-        str = str+"//"+_authority+"/";
-    if(!_path.empty())
-        str += path_string();
-    if(!_query.empty())
-        str = str+'?'+query_string();
-    if(!_fragment.empty())
-        str = str+"#"+_fragment;
-    return str;
+const std::string & uri::to_string() const{
+    return _str;
+}
+
+void uri::generate_string(){
+    _str.clear();
+    if(!_sheme.empty()){
+        _str.append(_sheme);
+        _str.push_back(':');
+    }
+    if(!_authority.empty()){
+        _str.append("//");
+        _str.append(_authority);
+        _str.push_back('/');
+    }
+    if(!_path.empty()){
+        _str.append(path_string());
+    }
+    if(!_query.empty()){
+        _str.push_back('?');
+        _str.append(query_string());
+    }
+    if(!_fragment.empty()){
+        _str.push_back('#');
+        _str.append(_fragment);
+    }
 }
 
 bool uri::set(std::string uri){
@@ -270,9 +293,11 @@ bool uri::set(std::string uri){
         }
     }
 
+    generate_string();
     return true;
 
 malformed_uri:
+    _str = uri;
     _valid = false;
     return false;
 }
@@ -283,6 +308,8 @@ uri & uri::operator=(const hsm::uri & uri){
     _path = uri._path;
     _query = uri._query;
     _fragment = uri._fragment;
+    _str = uri._str;
+    _valid = uri._valid;
 
     return *this;
 }
@@ -313,10 +340,27 @@ uri uri::operator +(const hsm::uri & uri) const{
     return r;
 }
 
+bool uri::operator <(const hsm::uri & uri) const{
+    return _str < uri._str;
+}
+
+bool uri::operator <=(const hsm::uri & uri) const{
+    return _str <= uri._str;
+}
+
+bool uri::operator >(const hsm::uri & uri) const{
+    return _str > uri._str;
+}
+
+bool uri::operator >=(const hsm::uri & uri) const{
+    return _str >= uri._str;
+}
+
 bool uri::cd_up(){
     if(_path.empty())
         return false;
     _path.pop_back();
+    generate_string();
     return true;
 }
 
@@ -327,6 +371,7 @@ bool uri::cd(const std::string &name){
         return cd_up();
     }
     _path.push_back(name);
+    generate_string();
     return true;
 }
 
