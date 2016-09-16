@@ -9,7 +9,9 @@ namespace hsm{
 template<typename data_t>
 class library{
 public:
-    library();
+	library(){
+		//
+	}
 
     class entry;
 
@@ -132,7 +134,10 @@ public:
     }
 
     data_t *find(const hsm::uri & uri) const{
-        //
+		auto it = _map.find(uri);
+		if(it == _map.end())
+			return nullptr;
+		return it->second;
     }
 
     bool remove(entry *e){
@@ -149,7 +154,10 @@ public:
         return false;
     }
 
-    bool contains(const hsm::uri & uri) const;
+	bool contains(const hsm::uri & uri) const{
+		auto it = _map.find(uri);
+		return it != _map.end();
+	}
 
     bool resolve_all(){
 		// TODO
